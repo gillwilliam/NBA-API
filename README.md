@@ -7,8 +7,8 @@ LeagueLeaders:
 - /leagueleaders/average/:team will get the average of the leagueleaders by team
 
 TeamPlayerDashboard:
-- /teamplayerdashboard/team/ gives stats of the whole team (needs to be done for all teams currently only for OKC)
-- /teamplayerdashboard/players/ gives stats of all players on team (needs to be done for all teams currently only for OKC)
+- /teamplayerdashboard/team/ gives stats of the whole team
+- /teamplayerdashboard/players/ gives stats of all players on team
 
 ## TODO:
 ### General
@@ -30,4 +30,4 @@ TeamPlayerDashboard:
 - using API run through the weeks and determine how the players did
 
 ### Current Strategy:
-- find players with the highest stdev away for the non-punted stats 
+- find players with the highest stdev away for the non-punted stats
