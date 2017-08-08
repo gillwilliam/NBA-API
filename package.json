@@ -1,0 +1,16 @@
+{
+  "name": "nba-api",
+  "version": "1.0.0",
+  "description": "An API for accessing NBA stats",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "William Gill",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.16.2",
+    "body-parser": "^1.17.2",
+    "express": "^4.15.4"
+  }
+}
