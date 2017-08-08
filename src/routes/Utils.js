@@ -47,6 +47,18 @@ statAverage: function (headers, playersx) {
 
   return Averages;
 
+},
+
+queryBuilder: function (baseURL, params, values) {
+
+  baseURL += params.reduce( (sum, value, index) => {
+
+    return sum + "&" + value + "=" + values[index];
+
+  })
+
+  return baseURL;
+
 }
 
 }
