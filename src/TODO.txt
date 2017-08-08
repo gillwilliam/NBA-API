@@ -1,0 +1,9 @@
+TODO:
+- Add a route for getting an array with many seasons of the player or team (arbitrary number?)
+- Add more aggregation stats
+- Add playoff vs regular season params
+- array of one stat over the years
+- compare "eras"
+- Add fantasy specific things
+  - Have a way to incorporate my league and team
+- View trends over the season of a specific stat (or stats)
