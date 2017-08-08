@@ -31,6 +31,7 @@ router.get("/nba/:player", (req,res) => {
   })
 })
 
+
 router.get("/nbateam/:team", (req,res) => {
   axios.get("http://stats.nba.com/stats/leagueLeaders?LeagueID=00&PerMode=PerGame&Scope=S&Season=2016-17&SeasonType=Regular+Season&StatCategory=PTS")
   .then( (response) => {
@@ -42,9 +43,30 @@ router.get("/nbateam/:team", (req,res) => {
       }
     })
 
-    res.json({"test": filtered});
+    res.json({"test": formatJSONArray(response.data.resultSet.headers, filtered)});
   })
 })
+
+function formatJSONArray(headers, playersx){
+
+  var Players = {};
+  playersx.map((player) => {
+    Players[player[2]] = formatJSONPlayer(headers,player);
+  })
+
+  return Players;
+}
+
+function formatJSONPlayer (headers, playerx) {
+  var Player = {};
+  headers.map((title, index) => {
+    Player[title] = playerx[index];
+  })
+
+  return Player;
+
+  // body...
+}
 
 app.listen(8080, function() {
     console.log("All right ! I am alive at Port 8080.");
