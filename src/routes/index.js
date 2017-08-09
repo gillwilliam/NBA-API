@@ -4,6 +4,7 @@ const Constants = require('./Constants');
 
 const TeamPlayerDashboard = require('./TeamPlayerDashboard');
 const LeagueLeaders = require('./LeagueLeaders');
+const Scoreboard = require('./Scoreboard');
 
 
 router.get('/', (req, res) => {
@@ -12,6 +13,7 @@ router.get('/', (req, res) => {
 
 router.use("/leagueleaders", LeagueLeaders);
 router.use("/teamplayerdashboard", TeamPlayerDashboard);
+router.use("/scoreboard", Scoreboard);
 
 
 

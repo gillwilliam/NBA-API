@@ -2,6 +2,8 @@ const router = require('express').Router();
 const axios = require('axios');
 const Utils = require('./Utils');
 
+
+// TODO: Use query builder here
 var URL = "http://stats.nba.com/stats/leagueLeaders?LeagueID=00&PerMode=PerGame&Scope=S&Season=2016-17&SeasonType=Regular+Season&StatCategory=PTS";
 
 router.get("/player/:player", (req,res) => {
