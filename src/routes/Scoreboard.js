@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const axios = require('axios');
 const Utils = require('./Utils');
-
+const moment = require('moment');
+const Promise = require('bluebird');
 
 /*
 How to get the individual game stats of a player.
@@ -20,87 +21,157 @@ http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/
 var URLbase = "http://stats.nba.com/js/data/widgets/boxscore_breakdown_";
 var URLbasePlayer = "http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/";
 
-function getGame (URLx, team) {
-  return axios.get(URLx)
-  .then( (response) => {
+function getGame(URLx, team) {
+  return axios.get(URLx).then((response) => {
     var games = response.data.results.filter((game) => {
-      if(game.HomeTeam.triCode == team){
+      if (game.HomeTeam.triCode == team) {
         return true;
-      }else if(game.VisitorTeam.triCode == team){
+      } else if (game.VisitorTeam.triCode == team) {
         return true;
-      }else{
+      } else {
         return false;
       }
     })
 
-    if(games.length == 0){
+    if (games.length == 0) {
       return false;
     }
     return games;
   })
 }
 
-function getPlayerStats(team, date, player){
-    //Date: year/month/day
+function promiseWhile(condition, action) {
+    var resolver = Promise.defer();
 
-    var URLComplete = URLbase + date + ".json";
-    return getGame(URLComplete, team).then((game) => {
+    var loop = function() {
+        if (!condition()) return resolver.resolve();
+        return Promise.cast(action())
+            .then(loop)
+            .catch(resolver.reject);
+    };
 
-      if(!game){
-        return "No game found";
-      }
+    process.nextTick(loop);
+    return resolver.promise;
+};
 
-      var URLPlayerComplete = URLbasePlayer + game[0].GameID + "_gamedetail.json";
-      console.log(URLPlayerComplete);
-      return axios.get(URLPlayerComplete)
-      .then( (response) => {
+function getPlayerStatsStartEnd(team, startDate, endDate, player) {
 
-        var playerName = player.split("-");
-        console.log("First Name: " + playerName[0]);
-        console.log("Last Name: " + playerName[1]);
-        console.log("Date: " + date);
+  var allStats = new Array();
 
-        //away
-        var filteredPlayerAway = response.data.g.vls.pstsg.filter( (player) => {
-          if(player.fn == playerName[0] && player.ln == playerName[1]){
-            return true;
-          }else{
-            return false;
-          }
-        })
+  var startYear = startDate.substring(0,4);
+  var startMonth = startDate.substring(4,6);
+  var startDay = startDate.substring(6,8);
 
-        //home
-        var filteredPlayerHome = response.data.g.hls.pstsg.filter( (player) => {
-          if(player.fn == playerName[0] && player.ln == playerName[1]){
-            return true;
-          }else{
-            return false;
-          }
-        })
+  var endYear = endDate.substring(0,4);
+  var endMonth = endDate.substring(4,6);
+  var endDay = endDate.substring(6,8);
 
-        if(filteredPlayerHome.length > 0){
-          return filteredPlayerHome;
-        }else{
-          return filteredPlayerAway;
-        }
-
+  var start = new Date(startMonth + "/" + startDay + "/" + startYear);
+  var end = new Date(endMonth + "/" + endDay + "/" + endYear);
+  console.log(start);
+  console.log(end);
+  console.log(start < end)
+  return promiseWhile(
+    function () {
+      return start < end;
+    }, function () {
+      console.log("test")
+      var dateStr = moment(start).format('YYYY/MM/DD');
+      var formattedDate = dateStr.split("/").reduce((cur, value) => {
+        return cur+value;
       })
 
-    })
+      return getPlayerStats(team, formattedDate, player)
+      .then( (response) => {
+        if(!response){
+
+        }else{
+          allStats.push(response[0]);
+          console.log(allStats.length)
+        }
+
+        var newDate = start.setDate(start.getDate() + 1);
+        start = new Date(newDate);
+        return allStats;
+      })
+    }
+
+  ).then( (response) => {
+    //console.log(response)
+    return allStats;
+  })
+
 }
+
+function getPlayerStats(team, date, player) {
+  //Date: year/month/day
+
+  var URLComplete = URLbase + date + ".json";
+  return getGame(URLComplete, team).then((game) => {
+
+    if (!game) {
+      return false;
+    }
+
+    var URLPlayerComplete = URLbasePlayer + game[0].GameID + "_gamedetail.json";
+    console.log(URLPlayerComplete);
+    return axios.get(URLPlayerComplete).then((response) => {
+
+      var playerName = player.split("-");
+      console.log("First Name: " + playerName[0]);
+      console.log("Last Name: " + playerName[1]);
+      console.log("Date: " + date);
+
+      //away
+      var filteredPlayerAway = response.data.g.vls.pstsg.filter((player) => {
+        if (player.fn == playerName[0] && player.ln == playerName[1]) {
+          return true;
+        } else {
+          return false;
+        }
+      })
+
+      //home
+      var filteredPlayerHome = response.data.g.hls.pstsg.filter((player) => {
+        if (player.fn == playerName[0] && player.ln == playerName[1]) {
+          return true;
+        } else {
+          return false;
+        }
+      })
+
+      if (filteredPlayerHome.length > 0) {
+        return filteredPlayerHome;
+      } else {
+        return filteredPlayerAway;
+      }
+
+    })
+
+  })
+}
+
+router.get("/time/:team/:startdate/:enddate/:player", (req, res) => {
+  getPlayerStatsStartEnd(req.params.team, req.params.startdate,req.params.enddate, req.params.player).then((response) => {
+    res.json({"test": response});
+  })})
 
 //example: localhost:8080/api/scoreboard/player/IND/20170301/Paul-George
 router.get("/player/:team/:date/:player", (req, res) => {
-  getPlayerStats(req.params.team, req.params.date, req.params.player).then( (response) => {
+  getPlayerStats(req.params.team, req.params.date, req.params.player).then((response) => {
     res.json({"test": response});
   })
 
 })
 
-router.get("/games/:team", (req,res) => {
+router.get("/games/:team", (req, res) => {
   getGame(URL, req.params.team).then((response) => {
     res.json({"test": response})
   })
+})
+
+router.get("/test", (req, res) => {
+  getPlayerStatsStartEnd("IND", "20130205", "20130213", "Paul-George");
 })
 
 module.exports = router
