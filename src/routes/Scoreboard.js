@@ -17,65 +17,8 @@ http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/
 
 */
 
-router.get("/player/:team/:date/:player", (req, res) => {
-
-  //Date: year/month/day
-
-  var URLU = URLbase + req.params.date + ".json";
-  console.log(URLU);
-  getGame(URLU, req.params.team).then((game) => {
-
-    if(!game){
-      res.json({"test": "No game found"})
-      return;
-    }
-
-    URLbasePlayer += game[0].GameID + "_gamedetail.json";
-    console.log(URLbasePlayer);
-    axios.get(URLbasePlayer)
-    .then( (response) => {
-
-      var playerName = req.params.player.split("-");
-      console.log("First Name: " + playerName[0]);
-      console.log("Last Name: " + playerName[1]);
-      console.log("Date: " + req.params.date);
-
-      //away
-      var filteredPlayerAway = response.data.g.vls.pstsg.filter( (player) => {
-        if(player.fn == playerName[0] && player.ln == playerName[1]){
-          return true;
-        }else{
-          return false;
-        }
-      })
-
-      //home
-      var filteredPlayerHome = response.data.g.hls.pstsg.filter( (player) => {
-        if(player.fn == playerName[0] && player.ln == playerName[1]){
-          return true;
-        }else{
-          return false;
-        }
-      })
-
-      if(filteredPlayerHome.length > 0){
-        res.json({"test": filteredPlayerHome})
-      }else{
-        res.json({"test": filteredPlayerAway})
-      }
-
-    })
-  
-  })
-
-
-})
-
 var URLbase = "http://stats.nba.com/js/data/widgets/boxscore_breakdown_";
 var URLbasePlayer = "http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/";
-
-var URL = "http://stats.nba.com/js/data/widgets/boxscore_breakdown_20170201.json"
-var URLPlayer = "http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/0021600730_gamedetail.json";
 
 function getGame (URLx, team) {
   return axios.get(URLx)
@@ -96,6 +39,63 @@ function getGame (URLx, team) {
     return games;
   })
 }
+
+function getPlayerStats(team, date, player){
+    //Date: year/month/day
+
+    var URLComplete = URLbase + date + ".json";
+    return getGame(URLComplete, team).then((game) => {
+
+      if(!game){
+        return "No game found";
+      }
+
+      var URLPlayerComplete = URLbasePlayer + game[0].GameID + "_gamedetail.json";
+      console.log(URLPlayerComplete);
+      return axios.get(URLPlayerComplete)
+      .then( (response) => {
+
+        var playerName = player.split("-");
+        console.log("First Name: " + playerName[0]);
+        console.log("Last Name: " + playerName[1]);
+        console.log("Date: " + date);
+
+        //away
+        var filteredPlayerAway = response.data.g.vls.pstsg.filter( (player) => {
+          if(player.fn == playerName[0] && player.ln == playerName[1]){
+            return true;
+          }else{
+            return false;
+          }
+        })
+
+        //home
+        var filteredPlayerHome = response.data.g.hls.pstsg.filter( (player) => {
+          if(player.fn == playerName[0] && player.ln == playerName[1]){
+            return true;
+          }else{
+            return false;
+          }
+        })
+
+        if(filteredPlayerHome.length > 0){
+          return filteredPlayerHome;
+        }else{
+          return filteredPlayerAway;
+        }
+
+      })
+
+    })
+}
+
+//example: localhost:8080/api/scoreboard/player/IND/20170301/Paul-George
+router.get("/player/:team/:date/:player", (req, res) => {
+  getPlayerStats(req.params.team, req.params.date, req.params.player).then( (response) => {
+    res.json({"test": response});
+  })
+
+})
 
 router.get("/games/:team", (req,res) => {
   getGame(URL, req.params.team).then((response) => {
