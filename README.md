@@ -1,6 +1,12 @@
 # NBA-API
 An API for handling stats from stats.nba.com
 
+Tools used:
+- bluebird
+- moment
+- express
+- axios
+
 ## Routes:
 LeagueLeaders:
 - /leagueleaders/team/:team find league leaders by team
@@ -9,6 +15,10 @@ LeagueLeaders:
 TeamPlayerDashboard:
 - /teamplayerdashboard/team/ gives stats of the whole team
 - /teamplayerdashboard/players/ gives stats of all players on team
+
+Scoreboard:
+- /scoreboard/playerdates/:team/:startdate/:enddate/:player gives the stats of a player for each game in a given set of dates
+- /player/:team/:date/:player gives the stats of an individual game
 
 ## TODO:
 ### General

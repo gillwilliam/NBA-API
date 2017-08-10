@@ -151,7 +151,7 @@ function getPlayerStats(team, date, player) {
   })
 }
 
-router.get("/time/:team/:startdate/:enddate/:player", (req, res) => {
+router.get("/playerdates/:team/:startdate/:enddate/:player", (req, res) => {
   getPlayerStatsStartEnd(req.params.team, req.params.startdate,req.params.enddate, req.params.player).then((response) => {
     res.json({"test": response});
   })})
@@ -164,14 +164,6 @@ router.get("/player/:team/:date/:player", (req, res) => {
 
 })
 
-router.get("/games/:team", (req, res) => {
-  getGame(URL, req.params.team).then((response) => {
-    res.json({"test": response})
-  })
-})
 
-router.get("/test", (req, res) => {
-  getPlayerStatsStartEnd("IND", "20130205", "20130213", "Paul-George");
-})
 
 module.exports = router
