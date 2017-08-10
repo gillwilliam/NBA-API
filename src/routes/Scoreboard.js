@@ -19,8 +19,16 @@ http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/
 
 router.get("/player/:team/:date/:player", (req, res) => {
 
-  URLbase += req.params.date + ".json";
-  getGame(URLbase, req.params.team).then((game) => {
+  //Date: year/month/day
+
+  var URLU = URLbase + req.params.date + ".json";
+  console.log(URLU);
+  getGame(URLU, req.params.team).then((game) => {
+
+    if(!game){
+      res.json({"test": "No game found"})
+      return;
+    }
 
     URLbasePlayer += game[0].GameID + "_gamedetail.json";
     console.log(URLbasePlayer);
@@ -57,6 +65,7 @@ router.get("/player/:team/:date/:player", (req, res) => {
       }
 
     })
+  
   })
 
 
@@ -80,6 +89,10 @@ function getGame (URLx, team) {
         return false;
       }
     })
+
+    if(games.length == 0){
+      return false;
+    }
     return games;
   })
 }
