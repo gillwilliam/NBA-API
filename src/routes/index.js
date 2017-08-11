@@ -5,6 +5,7 @@ const Constants = require('./Constants');
 const TeamPlayerDashboard = require('./TeamPlayerDashboard');
 const LeagueLeaders = require('./LeagueLeaders');
 const Scoreboard = require('./Scoreboard');
+const ScoreboardAbstract = require('./ScoreboardAbstract');
 
 
 router.get('/', (req, res) => {
@@ -14,6 +15,9 @@ router.get('/', (req, res) => {
 router.use("/leagueleaders", LeagueLeaders);
 router.use("/teamplayerdashboard", TeamPlayerDashboard);
 router.use("/scoreboard", Scoreboard);
+router.use("/scoreboardabstract", ScoreboardAbstract);
+
+axios.defaults.headers.common['Referer'] = "stats.nba.com/stats/";
 
 
 

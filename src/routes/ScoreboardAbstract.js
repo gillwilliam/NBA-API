@@ -18,25 +18,37 @@ http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/
 
 */
 
-var URLbase = "http://stats.nba.com/js/data/widgets/boxscore_breakdown_";
-var URLbasePlayer = "http://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2016/scores/gamedetail/";
+var URLbase = "http://stats.nba.com/stats/scoreboardV2?DayOffset=0&LeagueID=00&gameDate=";
+var URLbasePlayer = "http://stats.nba.com/stats/boxscoretraditionalv2?EndPeriod=10&EndRange=28800&GameID=";
 
 function getGame(URLx, team) {
-  return axios.get(URLx).then((response) => {
-    var games = response.data.results.filter((game) => {
-      if (game.HomeTeam.triCode == team) {
+
+    return axios.get(URLx).then((response) => {
+    //console.log(response.data.resultSets[0].rowSet[0])
+    var games = Utils.formatJSONArray(response.data.resultSets[0].headers, response.data.resultSets[0].rowSet)
+
+    games = games.filter((game) => {
+      var teamA = game.GAMECODE.substring(9,12);
+      var teamB = game.GAMECODE.substring(12,15);
+
+      //console.log(teamA);
+      //console.log(teamA == team);
+      //console.log(teamB == team)
+
+
+      if(teamA == team || teamB == team){
         return true;
-      } else if (game.VisitorTeam.triCode == team) {
-        return true;
-      } else {
+      }else{
         return false;
       }
     })
 
-    if (games.length == 0) {
+    if(games.length == 0){
       return false;
     }
-    return games;
+    //console.log(games)
+
+    return games[0].GAME_ID;
   })
 }
 
@@ -101,49 +113,42 @@ function getPlayerStatsStartEnd(team, startDate, endDate, player, format) {
   })
 
 }
-
-function getPlayerStats(team, date, player) {
+function getPlayerStats(team, dates, player) {
   //Date: year/month/day
 
-  var URLComplete = URLbase + date + ".json";
-  return getGame(URLComplete, team).then((game) => {
+  //11%2F06%2F2014
+  var year = dates.substring(0, 4);
+  var day = dates.substring(4, 6);
+  var month = dates.substring(6, 8);
+  var URLComplete = URLbase + day + "%2F" + month + "%2F" + year;
+  console.log(URLComplete);
+  return getGame(URLComplete, team).then((id) => {
 
-    if (!game) {
+    if (!id) {
       return false;
     }
 
-    var URLPlayerComplete = URLbasePlayer + game[0].GameID + "_gamedetail.json";
+    var URLPlayerComplete = URLbasePlayer + id + "&RangeType=0&Season=2016-17&SeasonType=Regular+Season&StartPeriod=1&StartRange=0";
     console.log(URLPlayerComplete);
     return axios.get(URLPlayerComplete).then((response) => {
+      //console.log(response.data.resultSets[0].rowSet)
+      var playerName = player.replace("-", " ");
+    //  console.log("First Name: " + playerName);
+    //  console.log("Date: " + dates);
 
-      var playerName = player.split("-");
-      console.log("First Name: " + playerName[0]);
-      console.log("Last Name: " + playerName[1]);
-      console.log("Date: " + date);
+      var players = Utils.formatJSONArray(response.data.resultSets[0].headers, response.data.resultSets[0].rowSet);
 
-      //away
-      var filteredPlayerAway = response.data.g.vls.pstsg.filter((player) => {
-        if (player.fn == playerName[0] && player.ln == playerName[1]) {
+      //console.log(players[0])
+
+      var filteredPlayers = players.filter((player) => {
+        if(player.PLAYER_NAME == playerName){
           return true;
-        } else {
+        }else{
           return false;
         }
       })
-
-      //home
-      var filteredPlayerHome = response.data.g.hls.pstsg.filter((player) => {
-        if (player.fn == playerName[0] && player.ln == playerName[1]) {
-          return true;
-        } else {
-          return false;
-        }
-      })
-
-      if (filteredPlayerHome.length > 0) {
-        return filteredPlayerHome;
-      } else {
-        return filteredPlayerAway;
-      }
+      console.log(filteredPlayers)
+      return filteredPlayers;
 
     })
 
@@ -154,9 +159,9 @@ function getSeasonStats(team, player) {
   var season = new Array();
   var counter = 0;
 
-  //Sept 3rd
+  //November 3rd
   var seasonStart = new Date("11/03/2016");
-  var seasonEnd = new Date("04/10/2017");
+  var seasonEnd = new Date("12/03/2016");
 
   //console.log("test" + (seasonStart < seasonEnd))
 
@@ -164,19 +169,17 @@ function getSeasonStats(team, player) {
     return (seasonStart < seasonEnd)
   }, () => {
     var startdate = new Date(seasonStart);
-    var enddate =  new Date(seasonStart);
+    var enddate = new Date(seasonStart);
     var newDate = enddate.setDate(enddate.getDate() + 7);
     enddate = new Date(newDate);
 
-
-
-    return getPlayerStatsStartEnd(team, startdate, enddate, player).then((gamesArr) => {
+    return getPlayerStatsStartEnd(team, startdate, enddate, player, false).then((gamesArr) => {
       season[counter] = gamesArr;
       counter++;
       seasonStart = new Date(enddate);
       return season;
     })
-  }).then( (response) => {
+  }).then((response) => {
     return season;
   })
 
@@ -198,9 +201,23 @@ router.get("/player/:team/:date/:player", (req, res) => {
 
 router.get("/season/:team/:player", (req, res) => {
   getSeasonStats(req.params.team, req.params.player).then((response) => {
+    res.json({"test": response})
+  })
+})
+
+router.get("/test/:team/", (req, res) => {
+  getGame(URLbase, req.params.team)
+  .then( (response) => {
     res.json({"test" : response})
   })
 
+})
+
+router.get("/example", (req,res) => {
+  axios.get("http://stats.nba.com/stats/scoreboardV2?DayOffset=0&LeagueID=00&gameDate=01%2F02%2F2017")
+  .then((response) => {
+    res.json({"test" : response.data})
+  })
 })
 
 module.exports = router
