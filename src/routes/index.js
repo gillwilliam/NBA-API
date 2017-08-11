@@ -6,6 +6,7 @@ const TeamPlayerDashboard = require('./TeamPlayerDashboard');
 const LeagueLeaders = require('./LeagueLeaders');
 const Scoreboard = require('./Scoreboard');
 const ScoreboardAbstract = require('./ScoreboardAbstract');
+const PlayerGameLogs = require('./PlayerGameLogs');
 
 
 router.get('/', (req, res) => {
@@ -16,6 +17,7 @@ router.use("/leagueleaders", LeagueLeaders);
 router.use("/teamplayerdashboard", TeamPlayerDashboard);
 router.use("/scoreboard", Scoreboard);
 router.use("/scoreboardabstract", ScoreboardAbstract);
+router.use("/playergamelogs", PlayerGameLogs);
 
 axios.defaults.headers.common['Referer'] = "stats.nba.com/stats/";
 
