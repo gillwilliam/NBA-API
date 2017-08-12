@@ -5,6 +5,9 @@ const moment = require('moment');
 const AllPlayers = require('./AllPlayers');
 const Sim = require('./Sim');
 const Promise = require('bluebird');
+const fs = require('fs');
+
+const archivedData = require('../sampleSim.js');
 
 var URL = "http://stats.nba.com/stats/playergamelogs?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=Totals&Period=0&PlayerID=";
 
@@ -128,7 +131,7 @@ function addAggregateElem(data) {
 
 }
 
-function onlyAggregate(data){
+function onlyAggregate(data) {
 
   var agg = new Array();
 
@@ -250,7 +253,7 @@ router.get("/aggExampleTeam", (req, res) => {
 
 })
 
-function runSimulation(){
+function runSimulation() {
   var allTeamsStats = new Array();
 
   var counter = 0;
@@ -270,24 +273,66 @@ function runSimulation(){
 
     var numWeeks = allTeamsStats[0].length;
 
-    for(var i = 0; i < numWeeks; i++){
+    for (var i = 0; i < numWeeks; i++) {
       var temp = new Array();
-      for(var k = 0; k < length; k++){
+      for (var k = 0; k < length; k++) {
         temp[k] = allTeamsStats[k][i];
       }
       separated[i] = temp;
     }
-
 
     return separated;
   })
 
 }
 
-router.get("/runsim", (req, res) => {
-  runSimulation().then((response) => {
-    res.json({test: response})
+function whoWon(weekData, players) {
+
+  var result = new Array();
+
+  players.map((game) => {
+    result[game[0]] = compare(game[0], game[1], weekData);
   })
+  players.map((game) => {
+    result[game[1]] = compare(game[1], game[0], weekData);
+  })
+  return result;
+}
+
+function compare(playerA, playerB, data) {
+  var counter = 0;
+  var cats = [
+    "PTS",
+    "REB",
+    "FG_PCT",
+    "FG3M",
+    "STL",
+    "BLK",
+    "TOV",
+    "AST",
+    "FT_PCT"
+  ];
+  var filtered = cats.filter((cat) => {
+    //console.log(playerA);
+    return (data[playerA][cat] < data[playerB][cat])
+  })
+
+  return filtered
+}
+
+router.get("/runsim", (req, res) => {
+  // runSimulation().then((response) => {
+  //   res.json({test: response})
+  // })
+  var players = Sim.schedule;
+  var fullSeason = new Array();
+  console.log(players[0]);
+  //splice is for the weeks that are considered
+  archivedData.splice(0, players.length).map((weekData, index) => {
+    fullSeason[index] = whoWon(weekData, players[index])
+  })
+
+  res.json({test: fullSeason})
 })
 
 module.exports = router;
