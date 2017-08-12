@@ -7,7 +7,12 @@ Tools used:
 - express
 - axios
 
-## Routes:
+## Current Routes:
+
+PlayerGameLogs:
+- /runsim runs the simulation of a sample (fantasy) season with 6 players (x number of players on each team)
+- /getExampleTeam will get the stats of each game for a team
+
 LeagueLeaders:
 - /leagueleaders/team/:team find league leaders by team
 - /leagueleaders/average/:team will get the average of the leagueleaders by team
@@ -19,6 +24,11 @@ TeamPlayerDashboard:
 Scoreboard:
 - /scoreboard/playerdates/:team/:startdate/:enddate/:player gives the stats of a player for each game in a given set of dates
 - /player/:team/:date/:player gives the stats of an individual game
+
+ScoreboardAbstract (for getting older stats):
+- /playerdates/:team/:startdate/:enddate/:player gives the stats of a player between the start and end dates
+- /player/:team/:date/:player gives the stats of a player on a specific date
+- /season/:team/:player gets the full season stats for the player
 
 ## TODO:
 ### General
