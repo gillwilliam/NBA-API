@@ -8,6 +8,7 @@ const Promise = require('bluebird');
 const fs = require('fs');
 
 const archivedData = require('../sampleSim.js');
+const newArchivedData = require('../SimData.js');
 
 var URL = "http://stats.nba.com/stats/playergamelogs?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=Totals&Period=0&PlayerID=";
 
@@ -320,19 +321,83 @@ function compare(playerA, playerB, data) {
   return filtered
 }
 
-router.get("/runsim", (req, res) => {
+function runSimWithCats() {
+  var players = Sim.schedule;
+  var fullSeason = new Array();
+  //slice is for the weeks that are considered
+  newArchivedData.slice(0, players.length).map((weekData, index) => {
+    fullSeason[index] = whoWon(weekData, players[index])
+  })
+  return fullSeason;
+}
+
+function runSim() {
+  var players = Sim.schedule;
+  var fullSeason = new Array();
+  var data = runSimWithCats();
+  data.map((weekData, index) => {
+    fullSeason[index] = whoWonRecord(weekData, players[index])
+  })
+  return fullSeason;
+}
+
+function whoWonRecord(weekData, players) {
+
+  var result = new Array();
+
+  players.map((game) => {
+    result[game[0]] = compareRecord(game[0], game[1], weekData);
+  })
+  players.map((game) => {
+    result[game[1]] = compareRecord(game[1], game[0], weekData);
+  })
+  return result;
+}
+
+function compareRecord(playerA, playerB, data) {
+  if (data[playerA].length < data[playerB].length) {
+    return 0
+  } else if (data[playerA].length == data[playerB].length) {
+    return 1;
+  } else {
+    return 2;
+  }
+}
+
+function finalRecord() {
+  var teams = new Array();
+
+
+  var rawData = runSim();
+  for (var i = 0; i < 6; i++) {
+    var record = [0,0,0];
+    rawData.map((week) => {
+      record[week[i]] = record[week[i]] + 1;
+    })
+    teams[i] = record;
+  }
+  return teams;
+}
+
+router.get("/runsimcats", (req, res) => {
   // runSimulation().then((response) => {
   //   res.json({test: response})
   // })
-  var players = Sim.schedule;
-  var fullSeason = new Array();
-  console.log(players[0]);
-  //splice is for the weeks that are considered
-  archivedData.splice(0, players.length).map((weekData, index) => {
-    fullSeason[index] = whoWon(weekData, players[index])
-  })
+  var seasonWithCats = runSimWithCats();
 
-  res.json({test: fullSeason})
+  res.json({test: seasonWithCats})
+})
+
+router.get("/runsim", (req, res) => {
+  // runSimulation().then((response) => {
+  //   fs.writeFile('simdata.txt', JSON.stringify(response), function (err) {
+  //
+  //   });
+  //   res.json({test: response})
+  // })
+  var seasonRecord = finalRecord()
+
+  res.json({test: seasonRecord})
 })
 
 module.exports = router;
