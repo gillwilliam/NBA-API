@@ -12,6 +12,7 @@ const newArchivedData = require('../SimData.js');
 
 var URL = "http://stats.nba.com/stats/playergamelogs?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=Totals&Period=0&PlayerID=";
 
+//Start and end dates of the season
 var SEASONDATES = {
   "2016-17": [
     "10/31/2016", "04/08/2017"
@@ -19,6 +20,14 @@ var SEASONDATES = {
   "2015-16": ["11/01/2015", "04/01/2016"]
 }
 
+/*
+* getSeasonStatsPlayer(year, playerName) produces the season (year) stats
+*     for playerName
+* getSeasonStatsPlayer: String String -> JSON
+* Examples:
+* getSeasonStatsPlayer("2015-16", "LeBron-James")
+* getSeasonStatsPlayer("2016-17", "Kevin-Durant")
+*/
 function getSeasonStatsPlayer(year, playerName) {
   var formattedPlayerName = (playerName).split("-");
   formattedPlayerName[0] = formattedPlayerName[0].replace("!", "-");
@@ -35,21 +44,19 @@ function getSeasonStatsPlayer(year, playerName) {
 
   console.log(completeURL);
   return axios.get(completeURL).then((response) => {
-    //start oct 31st end april 8th
-    //Season=2016-17
-    //&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&VsConference=&VsDivision=
 
     var data = Utils.formatJSONArray(response.data.resultSets[0].headers, response.data.resultSets[0].rowSet);
-
-    /*
-       * TODO:
-       * add all of the players to the data array and then sort the weeks
-       */
 
     return data;
   })
 }
 
+/*
+* weeklify(data, year) produces a list of the player data by week
+*   in ascending order
+* weeklify: JSON String -> JSON
+* Helper function for getSeasonStatsPlayer() as used in teamStats()
+*/
 function weeklify(data, year) {
   var seasonStart = new Date(SEASONDATES[year][0]);
   var seasonEnd = new Date(SEASONDATES[year][1]);
@@ -76,6 +83,13 @@ function weeklify(data, year) {
   return perWeekData;
 }
 
+/*
+* addAggregateElem(data) adds an element to each week of (season) data that
+*   aggregates the stats of ALL players that week
+* addAggregateElem: JSON -> JSON
+* function to be used in conjunction with getSeasonStatsPlayer() -> weeklify()
+* Currently UNUSED
+*/
 function addAggregateElem(data) {
 
   data.map((week) => {
@@ -132,6 +146,12 @@ function addAggregateElem(data) {
 
 }
 
+/*
+* onlyAggregate(data) produces a list each week of (season) data that only
+*   contains the aggregate stats of that week for ALL players on team
+* onlyAggregate: JSON -> JSON
+* function to be used in conjunction with getSeasonStatsPlayer() -> weeklify()
+*/
 function onlyAggregate(data) {
 
   var agg = new Array();
@@ -189,72 +209,18 @@ function onlyAggregate(data) {
   return agg;
 }
 
-router.get("/getSeasonStats/:year/:playerName", (req, res) => {
-  getSeasonStatsPlayer(req.params.year, req.params.playerName).then((perWeekData) => {
-    res.json({"test": perWeekData})
-  })
-
-})
-
-function promiseWhile(condition, action) {
-  var resolver = Promise.defer();
-
-  var loop = function() {
-    if (!condition())
-      return resolver.resolve();
-    return Promise.cast(action()).then(loop).catch(resolver.reject);
-  };
-
-  process.nextTick(loop);
-  return resolver.promise;
-};
-
-function teamStats(team, year) {
-
-  var counter = 0;
-  var length = team.length;
-
-  var allData = new Array();
-
-  return promiseWhile(function() {
-    return counter < length;
-  }, function() {
-
-    return getSeasonStatsPlayer(year, team[counter]).then((response) => {
-      allData.push(response);
-      counter++;
-    });
-  }).then((response) => {
-    //console.log(response)
-    var simplifiedData = allData.reduce((sum, value) => {
-      return sum.concat(value)
-    });
-    return weeklify(simplifiedData, year);
-  })
-}
-
-router.get("/getExampleTeam", (req, res) => {
-
-  var year = "2016-17";
-  var team = ["Paul-George", "LeBron-James"];
-  teamStats(team, year).then((response) => {
-    res.json({test: addAggregateElem(response)})
-  })
-
-})
-
-router.get("/aggExampleTeam", (req, res) => {
-  console.log(Sim.sched);
-  var year = "2016-17";
-  //var team = ["Paul-George", "LeBron-James"];
-  var team = Sim.teams[2];
-  teamStats(team, year).then((response) => {
-    res.json({test: onlyAggregate(response)})
-  })
-
-})
-
-function runSimulation() {
+/*
+* onlyAggregateTeamSim() produces a list of the aggregated stats by week for all
+*    teams in the simulation (pulled from Sim.js)
+* onlyAggregateTeamSim: Blank -> JSON
+* Options:
+*   To change the players in team, change the player names in Sim.js
+*   Following a sample simulation schedule (Sim.schedule)
+* TODO:
+*   Have year as a parameter
+*   Have it pull from "player archive"
+*/
+function onlyAggregateTeamSim() {
   var allTeamsStats = new Array();
 
   var counter = 0;
@@ -287,6 +253,12 @@ function runSimulation() {
 
 }
 
+/*
+* whoWon(weekData, players) produces a list of the categories that each player
+*   won for that week against their opponent
+* whoWon: JSON [String] -> JSON
+*/
+
 function whoWon(weekData, players) {
 
   var result = new Array();
@@ -300,6 +272,11 @@ function whoWon(weekData, players) {
   return result;
 }
 
+/*
+* compare(playerA, playerB, data) produces a list of the categories that playerA
+*   won vs playerB based on data
+* compare: Int Int JSON -> JSON
+*/
 function compare(playerA, playerB, data) {
   var counter = 0;
   var cats = [
@@ -321,6 +298,13 @@ function compare(playerA, playerB, data) {
   return filtered
 }
 
+/*
+* runSimWithCats() runs the simulation of the full season returning the
+*   categories that each person won per week
+* compare: blank -> JSON
+* OFFLINE DATA (newArchivedData)
+* stats.nba.com throttles requests after some time
+*/
 function runSimWithCats() {
   var players = Sim.schedule;
   var fullSeason = new Array();
@@ -331,6 +315,13 @@ function runSimWithCats() {
   return fullSeason;
 }
 
+/*
+* runSim() runs the simulation of the full season returning the resulting
+*   record of each player
+* compare: blank -> JSON
+* OFFLINE DATA (newArchivedData)
+* stats.nba.com throttles requests after some time
+*/
 function runSim() {
   var players = Sim.schedule;
   var fullSeason = new Array();
@@ -341,6 +332,11 @@ function runSim() {
   return fullSeason;
 }
 
+/*
+* whoWonRecord(weekData, players) returns 0 (loss), 1 (tie), 2 (win) for each
+*   player for that week
+* whoWonRecord: JSON [String] -> JSON
+*/
 function whoWonRecord(weekData, players) {
 
   var result = new Array();
@@ -354,6 +350,11 @@ function whoWonRecord(weekData, players) {
   return result;
 }
 
+/*
+* compareRecord(playerA, playerB, data) returns 0 (loss), 1 (tie), 2 (win) that
+*   playerA won vs playerB based on data
+* compare: Int Int JSON -> JSON
+*/
 function compareRecord(playerA, playerB, data) {
   if (data[playerA].length < data[playerB].length) {
     return 0
@@ -364,13 +365,17 @@ function compareRecord(playerA, playerB, data) {
   }
 }
 
+/*
+* whoWonRecord(weekData, players) a aggregated record for each player for
+*   their performance over the season
+* whoWonRecord: blank -> JSON
+*/
 function finalRecord() {
   var teams = new Array();
 
-
   var rawData = runSim();
   for (var i = 0; i < 6; i++) {
-    var record = [0,0,0];
+    var record = [0, 0, 0];
     rawData.map((week) => {
       record[week[i]] = record[week[i]] + 1;
     })
@@ -379,8 +384,86 @@ function finalRecord() {
   return teams;
 }
 
+/*
+* promiseWhile(condition, action) produces the template of a while loop, but
+*   waits for the action to finish before moving on to next loop
+* promiseWhile: Bool Promise -> Promise
+* TODO: Move to Utils
+*/
+function promiseWhile(condition, action) {
+  var resolver = Promise.defer();
+
+  var loop = function() {
+    if (!condition())
+      return resolver.resolve();
+    return Promise.cast(action()).then(loop).catch(resolver.reject);
+  };
+
+  process.nextTick(loop);
+  return resolver.promise;
+};
+
+/*
+* teamStats(team, year) produces weekly stats of a team
+* teamStats: [String] String -> JSON
+* Examples:
+* teamStats(["Paul-George", "LeBron-James", "Kevin-Durant"], "2016-17")
+* teamStats(["Kyrie-Irving", "LeBron-James"], "2015-16")
+*/
+function teamStats(team, year) {
+
+  var counter = 0;
+  var length = team.length;
+
+  var allData = new Array();
+
+  return promiseWhile(function() {
+    return counter < length;
+  }, function() {
+
+    return getSeasonStatsPlayer(year, team[counter]).then((response) => {
+      allData.push(response);
+      counter++;
+    });
+  }).then((response) => {
+    //console.log(response)
+    var simplifiedData = allData.reduce((sum, value) => {
+      return sum.concat(value)
+    });
+    return weeklify(simplifiedData, year);
+  })
+}
+
+router.get("/getSeasonStats/:year/:playerName", (req, res) => {
+  getSeasonStatsPlayer(req.params.year, req.params.playerName).then((perWeekData) => {
+    res.json({"test": perWeekData})
+  })
+
+})
+
+router.get("/getExampleTeam", (req, res) => {
+
+  var year = "2016-17";
+  var team = ["Paul-George", "LeBron-James"];
+  teamStats(team, year).then((response) => {
+    res.json({test: addAggregateElem(response)})
+  })
+
+})
+
+router.get("/aggExampleTeam", (req, res) => {
+  console.log(Sim.sched);
+  var year = "2016-17";
+  //var team = ["Paul-George", "LeBron-James"];
+  var team = Sim.teams[2];
+  teamStats(team, year).then((response) => {
+    res.json({test: onlyAggregate(response)})
+  })
+
+})
+
 router.get("/runsimcats", (req, res) => {
-  // runSimulation().then((response) => {
+  // onlyAggregateTeamSim().then((response) => {
   //   res.json({test: response})
   // })
   var seasonWithCats = runSimWithCats();
@@ -389,7 +472,7 @@ router.get("/runsimcats", (req, res) => {
 })
 
 router.get("/runsim", (req, res) => {
-  // runSimulation().then((response) => {
+  // onlyAggregateTeamSim().then((response) => {
   //   fs.writeFile('simdata.txt', JSON.stringify(response), function (err) {
   //
   //   });

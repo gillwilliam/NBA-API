@@ -1,6 +1,16 @@
 # NBA-API
 An API for handling stats from stats.nba.com
 
+## Simulation:
+- Create x random players
+  - Have them pick the next "best" player
+  - Have one player follow the strategy
+- Use create matchups for every week
+- using API run through the weeks and determine how the players did
+
+### Current Strategy:
+- find players with the highest stdev away for the non-punted stats
+
 Tools used:
 - bluebird
 - moment
@@ -40,14 +50,3 @@ ScoreboardAbstract (for getting older stats):
 - Add fantasy specific things
   - Have a way to incorporate my league and team
 - View trends over the season of a specific stat (or stats)
-
-
-### Simulation:
-- Create x random players
-  - Have them pick the next "best" player
-  - Have one player follow the strategy
-- Use create matchups for every week
-- using API run through the weeks and determine how the players did
-
-### Current Strategy:
-- find players with the highest stdev away for the non-punted stats
